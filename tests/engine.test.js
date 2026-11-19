@@ -2,6 +2,7 @@ import { IdentityModule } from "../engine/identities.js";
 import { PolicyEngine } from "../engine/policyEngine.js";
 import { HybridAccessEngine } from "../engine/abacRebacPolicies.js";
 import { AuthModule } from "../engine/authModule.js";
+import { IoTSimulator } from "../engine/iotSimulator.js";
 
 const modulo = new IdentityModule();
 
@@ -275,3 +276,101 @@ console.log(
     operacion: "modificar_politicas",
   })
 );
+
+const iotSim = new IoTSimulator();
+
+console.log("--- 7.7 Simulación de dispositivos IoT ---");
+
+// 1. Estudiante de Computación consulta sensor de su departamento -> PERMITIDO
+console.log(
+  "IoT 1 (Estudiante consulta sensor de su depto):",
+  iotSim.ejecutarOperacionIoT({
+    deviceId: "IOT-SENS-01",
+    operacion: "consultar_recursos",
+    solicitante: {
+      id: "USR-002",
+      rol: "Estudiante",
+      departamento: "Computación",
+      activa: true,
+    },
+    accessEngine: hibrido,
+    fechaHora: "2026-11-19T10:00:00.000Z",
+    contexto: { dispositivoConfiable: true },
+  })
+);
+
+// 2. Dispositivo no confiable intenta consultar controlador restringido -> DENEGADO (ABAC-04)
+console.log(
+  "IoT 2 (Dispositivo no confiable en controlador restringido):",
+  iotSim.ejecutarOperacionIoT({
+    deviceId: "IOT-CTRL-02",
+    operacion: "consultar_recursos",
+    solicitante: {
+      id: "USR-003",
+      rol: "Técnico",
+      departamento: "Sistemas",
+      activa: true,
+    },
+    accessEngine: hibrido,
+    fechaHora: "2026-11-19T10:00:00.000Z",
+    contexto: { dispositivoConfiable: false },
+  })
+);
+
+// 3. Técnico modifica parámetros dentro de horario autorizado -> PERMITIDO
+console.log(
+  "IoT 3 (Técnico modifica en horario autorizado):",
+  iotSim.ejecutarOperacionIoT({
+    deviceId: "IOT-SENS-01",
+    operacion: "modificar_recursos",
+    solicitante: {
+      id: "USR-003",
+      rol: "Técnico",
+      departamento: "Computación",
+      activa: true,
+    },
+    accessEngine: hibrido,
+    fechaHora: "2026-11-19T11:00:00.000Z",
+    contexto: { horaAcceso: 11, horarioInicio: 8, horarioFin: 18, dispositivoConfiable: true },
+    payload: { parametros: { intervaloSegundos: 60 } },
+  })
+);
+
+// 4. Profesor intenta modificar cámara de un grupo que NO administra -> DENEGADO (ReBAC)
+console.log(
+  "IoT 4 (Profesor en cámara de grupo ajeno):",
+  iotSim.ejecutarOperacionIoT({
+    deviceId: "IOT-CAM-03",
+    operacion: "modificar_recursos",
+    solicitante: {
+      id: "USR-004",
+      rol: "Profesor",
+      departamento: "Computación",
+      activa: true,
+      gruposResponsable: ["GRP-CC-501"],
+    },
+    accessEngine: hibrido,
+    fechaHora: "2026-11-19T11:00:00.000Z",
+    contexto: { dispositivoConfiable: true },
+  })
+);
+
+// 5. Operación sin regla o sin permiso sobre dispositivo IoT -> DENEGADO
+console.log(
+  "IoT 5 (Estudiante intenta eliminar_usuarios sobre IoT):",
+  iotSim.ejecutarOperacionIoT({
+    deviceId: "IOT-SENS-01",
+    operacion: "eliminar_usuarios",
+    solicitante: {
+      id: "USR-002",
+      rol: "Estudiante",
+      departamento: "Computación",
+      activa: true,
+    },
+    accessEngine: hibrido,
+    fechaHora: "2026-11-19T11:00:00.000Z",
+    contexto: { dispositivoConfiable: true },
+  })
+);
+
+console.log("Eventos IoT ejecutados:", iotSim.telemetryLog.length);
