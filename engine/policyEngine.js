@@ -93,9 +93,10 @@ export class PolicyEngine {
       );
     }
 
-    // Buscar regla de autorización aplicable a la operación y recurso
-    const reglaAplicable = this.policies.find((pol) => {
-      const coincideOperacion = !pol.operacion || pol.operacion === operacion;
+    // Buscar todas las reglas aplicables a la operación, recurso y rol
+    const reglasAplicables = this.policies.filter((pol) => {
+      const coincideOperacion =
+        !pol.operacion || pol.operacion === "*" || pol.operacion === operacion;
       const coincideRecurso =
         !pol.recursoId ||
         pol.recursoId === "*" ||
@@ -105,7 +106,7 @@ export class PolicyEngine {
     });
 
     // Comportamiento 1: Denegar por defecto las solicitudes sin regla de autorización
-    if (!reglaAplicable) {
+    if (reglasAplicables.length === 0) {
       return registrarYResponder(
         "DENEGADO",
         "REG-01-DENEGAR-POR-DEFECTO",
@@ -114,28 +115,36 @@ export class PolicyEngine {
     }
 
     // Comportamiento 4: Evaluar las condiciones adicionales configuradas
-    if (typeof reglaAplicable.condicion === "function") {
-      const evalCondicion = reglaAplicable.condicion({
-        solicitante,
-        recurso,
-        operacion,
-        fechaHora,
-        contexto,
-      });
-      if (!evalCondicion.cumple) {
-        return registrarYResponder(
-          "DENEGADO",
-          reglaAplicable.id,
-          evalCondicion.motivo || `Condición no cumplida en regla ${reglaAplicable.id}`
-        );
+    let reglaAutorizada = null;
+    for (const regla of reglasAplicables) {
+      if (typeof regla.condicion === "function") {
+        const evalCondicion = regla.condicion({
+          solicitante,
+          recurso,
+          operacion,
+          fechaHora,
+          contexto,
+        });
+        if (!evalCondicion.cumple) {
+          return registrarYResponder(
+            "DENEGADO",
+            regla.id,
+            evalCondicion.motivo || `Condición no cumplida en regla ${regla.id}`
+          );
+        }
+      }
+      if (regla.operacion !== "*" && !reglaAutorizada) {
+        reglaAutorizada = regla;
       }
     }
+
+    const reglaFinal = reglaAutorizada || reglasAplicables[reglasAplicables.length - 1];
 
     // Comportamiento 6: Registrar decisión PERMITIDO
     return registrarYResponder(
       "PERMITIDO",
-      reglaAplicable.id,
-      reglaAplicable.descripcion || `Autorizado por regla ${reglaAplicable.id}`
+      reglaFinal.id,
+      reglaFinal.descripcion || `Autorizado por regla ${reglaFinal.id}`
     );
   }
 
