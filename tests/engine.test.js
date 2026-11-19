@@ -3,6 +3,7 @@ import { PolicyEngine } from "../engine/policyEngine.js";
 import { HybridAccessEngine } from "../engine/abacRebacPolicies.js";
 import { AuthModule } from "../engine/authModule.js";
 import { IoTSimulator } from "../engine/iotSimulator.js";
+import { NetworkAclEngine } from "../engine/networkAcl.js";
 
 const modulo = new IdentityModule();
 
@@ -374,3 +375,57 @@ console.log(
 );
 
 console.log("Eventos IoT ejecutados:", iotSim.telemetryLog.length);
+
+const aclEngine = new NetworkAclEngine();
+
+console.log("--- 9. Segmentación de red y ACL ---");
+
+// 1. Tráfico permitido de VLAN 30 a sensor en VLAN 40 (192.168.0.101)
+console.log(
+  "ACL 1 (Permitido VLAN 30 -> VLAN 40 sensor):",
+  aclEngine.evaluarTrafico({
+    origenSegmento: "VLAN 30",
+    ipOrigen: "192.168.30.15",
+    destinoSegmento: "VLAN 40",
+    ipDestino: "192.168.0.101",
+    operacion: "consultar_recursos",
+    solicitante: { id: "USR-002", rol: "Estudiante", departamento: "Computación", activa: true },
+    recurso: { id: "IOT-SENS-01", departamento: "Computación", restringido: false },
+    contexto: { dispositivoConfiable: true },
+    accessEngine: hibrido,
+  })
+);
+
+// 2. Tráfico bloqueado de VLAN 30 a segmento restringido VLAN 50 (192.168.50.10)
+console.log(
+  "ACL 2 (Denegado VLAN 30 -> VLAN 50 restringido):",
+  aclEngine.evaluarTrafico({
+    origenSegmento: "VLAN 30",
+    ipOrigen: "192.168.30.15",
+    destinoSegmento: "VLAN 50",
+    ipDestino: "192.168.50.10",
+    operacion: "consultar_recursos",
+    solicitante: { id: "USR-002", rol: "Estudiante", departamento: "Computación", activa: true },
+    recurso: { id: "SRV-ADMIN-99", restringido: true },
+    contexto: { dispositivoConfiable: true },
+    accessEngine: hibrido,
+  })
+);
+
+// 3. Tráfico bloqueado hacia controlador restringido (192.168.0.102) desde dispositivo no confiable
+console.log(
+  "ACL 3 (Denegado dispositivo no confiable -> controlador restringido):",
+  aclEngine.evaluarTrafico({
+    origenSegmento: "VLAN 30",
+    ipOrigen: "192.168.30.25",
+    destinoSegmento: "VLAN 50",
+    ipDestino: "192.168.0.102",
+    operacion: "consultar_recursos",
+    solicitante: { id: "USR-003", rol: "Técnico", departamento: "Sistemas", activa: true },
+    recurso: { id: "IOT-CTRL-02", departamento: "Sistemas", restringido: true },
+    contexto: { dispositivoConfiable: false },
+    accessEngine: hibrido,
+  })
+);
+
+console.log("Pruebas ACL registradas:", aclEngine.aclLog.length);
