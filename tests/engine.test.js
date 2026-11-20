@@ -795,6 +795,15 @@ const matrizResultados = [
 ];
 
 console.table(matrizResultados);
+// Si se define RESULTS_FILE (lo hace scripts/build.js), se guarda la matriz para mostrarla en la interfaz web
+if (process.env.RESULTS_FILE) {
+  const { writeFileSync } = await import("node:fs");
+  writeFileSync(
+    process.env.RESULTS_FILE,
+    JSON.stringify({ generado: new Date().toISOString(), matriz: matrizResultados }, null, 2)
+  );
+}
+
 // Falla el proceso (y por tanto el CI) si algún resultado no coincide con lo esperado
 const fallidas = matrizResultados.filter(
   (r) => r.Esperado.split(" ")[0].toUpperCase() !== r.Obtenido

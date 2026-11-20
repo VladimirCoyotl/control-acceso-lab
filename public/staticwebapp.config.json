@@ -1,0 +1,9 @@
+{
+  "globalHeaders": {
+    "X-Content-Type-Options": "nosniff",
+    "X-Frame-Options": "DENY",
+    "Referrer-Policy": "no-referrer",
+    "Content-Security-Policy": "default-src 'self'; script-src 'self' 'sha256-OlLYt5PmTIiEGb2Jk5bws+pzNrUQL/crV8imvhjyZRI='; style-src 'self' 'unsafe-inline'; img-src 'self' data:; object-src 'none'; base-uri 'self'"
+  },
+  "mimeTypes": { ".json": "application/json", ".txt": "text/plain" }
+}
