@@ -545,3 +545,253 @@ const consultaFinalAuditor = auditMod.consultarRegistros({
 });
 console.log("Total de registros auditados:", consultaFinalAuditor.total);
 console.log("Resumen por tipo de evento:", auditMod.resumen());
+
+console.log("--- Matriz completa de pruebas P01 - P15 ---");
+
+// Motor unificado con reglas base para cubrir P01..P15 de forma consistente
+const motorEscenarios = new HybridAccessEngine([
+  {
+    id: "POL-P01-EST-CONSULTA",
+    operacion: "consultar_recursos",
+    recursoId: "LAB-01",
+    roles: ["Estudiante"],
+    descripcion: "Estudiante consulta recurso permitido de su departamento",
+    condicion: ({ solicitante, recurso, contexto }) => {
+      const depto = recurso?.departamento ?? contexto?.departamentoRecurso;
+      if (solicitante.departamento !== depto) {
+        return { cumple: false, motivo: "Departamento distinto al del recurso" };
+      }
+      return { cumple: true };
+    },
+  },
+  {
+    id: "POL-P03-TEC-EQUIPO-ASIGNADO",
+    operacion: "modificar_recursos",
+    recursoId: "EQ-ASIGNADO-01",
+    roles: ["Técnico"],
+    descripcion: "Técnico modifica equipo asignado dentro de su departamento",
+    condicion: ({ solicitante, recurso, contexto }) => {
+      const depto = recurso?.departamento ?? contexto?.departamentoRecurso;
+      if (solicitante.departamento !== depto) {
+        return { cumple: false, motivo: "Equipo pertenece a otro departamento/técnico" };
+      }
+      return { cumple: true };
+    },
+  },
+  {
+    id: "POL-P04-TEC-EQUIPO-AJENO",
+    operacion: "modificar_recursos",
+    recursoId: "EQ-AJENO-02",
+    roles: ["Técnico"],
+    descripcion: "Técnico intenta modificar equipo de otro departamento/asignación",
+    condicion: ({ solicitante, recurso, contexto }) => {
+      const depto = recurso?.departamento ?? contexto?.departamentoRecurso;
+      if (solicitante.departamento !== depto) {
+        return { cumple: false, motivo: "Equipo ajeno: departamento no asignado al técnico" };
+      }
+      return { cumple: true };
+    },
+  },
+  {
+    id: "POL-P05-AUD-CONSULTA",
+    operacion: "consultar_auditoria",
+    recursoId: "*",
+    roles: ["Auditor", "Administrador"],
+    descripcion: "Auditor consulta registros de auditoría",
+  },
+  {
+    id: "POL-P09-IOT-OPERACION",
+    operacion: "consultar_recursos",
+    recursoId: "IOT-SENS-01",
+    roles: ["Estudiante", "Técnico", "Profesor", "Administrador"],
+    descripcion: "Dispositivo IoT consulta recurso autorizado",
+  },
+  {
+    id: "POL-P13-HORARIO",
+    operacion: "consultar_recursos",
+    recursoId: "LAB-HORARIO-01",
+    roles: ["Estudiante", "Técnico", "Profesor"],
+    descripcion: "Acceso sujeto a ventana horaria permitida",
+    condicion: ({ contexto }) => {
+      const hora = contexto?.horaAcceso;
+      const inicio = contexto?.horarioInicio ?? 8;
+      const fin = contexto?.horarioFin ?? 18;
+      if (typeof hora === "number" && (hora < inicio || hora > fin)) {
+        return { cumple: false, motivo: `Fuera de horario permitido (${inicio}:00-${fin}:00)` };
+      }
+      return { cumple: true };
+    },
+  },
+]);
+
+const estP01 = { id: "USR-P01", rol: "Estudiante", departamento: "Computación", activa: true };
+const tecP03 = { id: "USR-P03", rol: "Técnico", departamento: "Sistemas", activa: true };
+const audP05 = { id: "USR-P05", rol: "Auditor", departamento: "Sistemas", activa: true };
+const profP12 = {
+  id: "USR-P12",
+  rol: "Profesor",
+  departamento: "Computación",
+  activa: true,
+  gruposResponsable: ["GRP-CC-501"],
+};
+
+// P01: Estudiante consulta recurso permitido -> Permitido
+const rP01 = motorEscenarios.evaluate({
+  solicitante: estP01,
+  recurso: { id: "LAB-01", departamento: "Computación", restringido: false },
+  operacion: "consultar_recursos",
+  fechaHora: "2026-11-19T10:00:00.000Z",
+  contexto: { dispositivoConfiable: true },
+});
+
+// P02: Estudiante modifica políticas -> Denegado
+const rP02 = motorEscenarios.evaluate({
+  solicitante: estP01,
+  recurso: { id: "POL-GLOBAL", departamento: "Sistemas", restringido: true },
+  operacion: "modificar_politicas",
+  fechaHora: "2026-11-19T10:00:00.000Z",
+  contexto: { dispositivoConfiable: true },
+});
+
+// P03: Técnico modifica equipo asignado -> Permitido
+const rP03 = motorEscenarios.evaluate({
+  solicitante: tecP03,
+  recurso: { id: "EQ-ASIGNADO-01", departamento: "Sistemas", restringido: false },
+  operacion: "modificar_recursos",
+  fechaHora: "2026-11-19T10:00:00.000Z",
+  contexto: { dispositivoConfiable: true },
+});
+
+// P04: Técnico modifica equipo ajeno -> Denegado
+const rP04 = motorEscenarios.evaluate({
+  solicitante: tecP03,
+  recurso: { id: "EQ-AJENO-02", departamento: "Redes", restringido: false },
+  operacion: "modificar_recursos",
+  fechaHora: "2026-11-19T10:00:00.000Z",
+  contexto: { dispositivoConfiable: true },
+});
+
+// P05: Auditor consulta registros -> Permitido
+const rP05 = motorEscenarios.evaluate({
+  solicitante: audP05,
+  recurso: { id: "LOG-AUDITORIA", departamento: "Sistemas", restringido: true },
+  operacion: "consultar_auditoria",
+  fechaHora: "2026-11-19T10:00:00.000Z",
+  contexto: { dispositivoConfiable: true },
+});
+
+// P06: Auditor elimina registros -> Denegado
+const rP06 = motorEscenarios.evaluate({
+  solicitante: audP05,
+  recurso: { id: "LOG-AUDITORIA", departamento: "Sistemas", restringido: true },
+  operacion: "eliminar_registros",
+  fechaHora: "2026-11-19T10:00:00.000Z",
+  contexto: { dispositivoConfiable: true },
+});
+
+// P07: Usuario deshabilitado solicita acceso -> Denegado
+const rP07 = motorEscenarios.evaluate({
+  solicitante: { ...estP01, activa: false },
+  recurso: { id: "LAB-01", departamento: "Computación", restringido: false },
+  operacion: "consultar_recursos",
+  fechaHora: "2026-11-19T10:00:00.000Z",
+  contexto: { dispositivoConfiable: true },
+});
+
+// P08: Estudiante accede a VLAN administrativa -> Denegado
+const rP08 = aclEngine.evaluarTrafico({
+  origenSegmento: "VLAN 30",
+  ipOrigen: "192.168.30.15",
+  destinoSegmento: "VLAN 10",
+  ipDestino: "192.168.10.5",
+  operacion: "consultar_recursos",
+  solicitante: estP01,
+  recurso: { id: "ADMIN-CONSOLE", restringido: true },
+  contexto: { dispositivoConfiable: true },
+  accessEngine: motorEscenarios,
+});
+
+// P09: Dispositivo IoT realiza operación autorizada -> Permitido
+const rP09 = iotSim.ejecutarOperacionIoT({
+  deviceId: "IOT-SENS-01",
+  operacion: "consultar_recursos",
+  solicitante: estP01,
+  accessEngine: motorEscenarios,
+  fechaHora: "2026-11-19T10:00:00.000Z",
+  contexto: { dispositivoConfiable: true },
+});
+
+// P10: Dispositivo IoT intenta acceder a administración -> Denegado
+const rP10 = iotSim.ejecutarOperacionIoT({
+  deviceId: "IOT-SENS-01",
+  operacion: "administrar_dispositivos",
+  solicitante: estP01,
+  accessEngine: motorEscenarios,
+  fechaHora: "2026-11-19T10:00:00.000Z",
+  contexto: { dispositivoConfiable: true },
+});
+
+// P11: Usuario sin sesión solicita un recurso protegido -> Denegado
+const rP11 = authMod.authorizeWithSession(null, motorEscenarios, {
+  recurso: { id: "LOG-AUDITORIA", restringido: true },
+  operacion: "consultar_auditoria",
+});
+
+// P12: Profesor accede a recurso de otro grupo -> Según política ReBAC (Denegado)
+const rP12 = hibrido.evaluate({
+  solicitante: profP12,
+  recurso: { id: "MAT-502", grupoAcademico: "GRP-CC-502", restringido: false },
+  operacion: "modificar_recursos",
+  fechaHora: "2026-11-19T11:00:00.000Z",
+  contexto: { dispositivoConfiable: true },
+});
+
+// P13: Usuario accede fuera del horario permitido -> Denegado
+const rP13 = motorEscenarios.evaluate({
+  solicitante: estP01,
+  recurso: { id: "LAB-HORARIO-01", departamento: "Computación", restringido: false },
+  operacion: "consultar_recursos",
+  fechaHora: "2026-11-19T23:00:00.000Z",
+  contexto: { horaAcceso: 23, horarioInicio: 8, horarioFin: 18, dispositivoConfiable: true },
+});
+
+// P14: Usuario intenta escalar privilegios -> Denegado
+const rP14Escala = modulo.asignarRol(
+  { id: estudiante.id, rol: "Estudiante", departamento: "Computación", activa: true },
+  estudiante.id,
+  "Administrador"
+);
+const rP14 = {
+  resultado: rP14Escala.permitido === false ? "DENEGADO" : "PERMITIDO",
+  motivo: rP14Escala.motivo || rP14Escala.mensaje,
+};
+
+// P15: Usuario consulta un recurso inexistente -> Denegado
+const rP15 = iotSim.ejecutarOperacionIoT({
+  deviceId: "IOT-INEXISTENTE-999",
+  operacion: "consultar_recursos",
+  solicitante: estP01,
+  accessEngine: motorEscenarios,
+  fechaHora: "2026-11-19T10:00:00.000Z",
+  contexto: { dispositivoConfiable: true },
+});
+
+const matrizResultados = [
+  { ID: "P01", Esperado: "Permitido", Obtenido: rP01.resultado, Motivo: rP01.motivo },
+  { ID: "P02", Esperado: "Denegado", Obtenido: rP02.resultado, Motivo: rP02.motivo },
+  { ID: "P03", Esperado: "Permitido", Obtenido: rP03.resultado, Motivo: rP03.motivo },
+  { ID: "P04", Esperado: "Denegado", Obtenido: rP04.resultado, Motivo: rP04.motivo },
+  { ID: "P05", Esperado: "Permitido", Obtenido: rP05.resultado, Motivo: rP05.motivo },
+  { ID: "P06", Esperado: "Denegado", Obtenido: rP06.resultado, Motivo: rP06.motivo },
+  { ID: "P07", Esperado: "Denegado", Obtenido: rP07.resultado, Motivo: rP07.motivo },
+  { ID: "P08", Esperado: "Denegado", Obtenido: rP08.resultado, Motivo: rP08.motivo },
+  { ID: "P09", Esperado: "Permitido", Obtenido: rP09.decision.resultado, Motivo: rP09.decision.motivo },
+  { ID: "P10", Esperado: "Denegado", Obtenido: rP10.decision.resultado, Motivo: rP10.decision.motivo },
+  { ID: "P11", Esperado: "Denegado", Obtenido: rP11.resultado, Motivo: rP11.motivo },
+  { ID: "P12", Esperado: "Denegado (ReBAC)", Obtenido: rP12.resultado, Motivo: rP12.motivo },
+  { ID: "P13", Esperado: "Denegado", Obtenido: rP13.resultado, Motivo: rP13.motivo },
+  { ID: "P14", Esperado: "Denegado", Obtenido: rP14.resultado, Motivo: rP14.motivo },
+  { ID: "P15", Esperado: "Denegado", Obtenido: rP15.decision.resultado, Motivo: rP15.decision.motivo },
+];
+
+console.table(matrizResultados);
