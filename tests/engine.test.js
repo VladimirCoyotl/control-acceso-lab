@@ -4,6 +4,7 @@ import { HybridAccessEngine } from "../engine/abacRebacPolicies.js";
 import { AuthModule } from "../engine/authModule.js";
 import { IoTSimulator } from "../engine/iotSimulator.js";
 import { NetworkAclEngine } from "../engine/networkAcl.js";
+import { AuditModule, AUDIT_EVENT_TYPES } from "../engine/auditModule.js";
 
 const modulo = new IdentityModule();
 
@@ -429,3 +430,118 @@ console.log(
 );
 
 console.log("Pruebas ACL registradas:", aclEngine.aclLog.length);
+
+const auditMod = new AuditModule({
+  policyEngine: hibrido,
+  authModule: authMod,
+  iotSimulator: iotSim,
+  aclEngine,
+});
+
+console.log("--- 7.9 / 10. Módulo de auditoría: 1 prueba por cada uno de los 8 eventos ---");
+
+// 1. Inicio de sesión
+const ev1InicioSesion = auditMod.registrarEvento({
+  fuente: "SESION",
+  tipoEvento: AUDIT_EVENT_TYPES.LOGIN,
+  identidad: "USR-001",
+  rol: "Administrador",
+  recursoAfectado: "SESION-001",
+  operacion: "iniciar_sesion",
+  resultado: "PERMITIDO",
+  motivo: "Credenciales y segundo factor MFA validados correctamente",
+});
+console.log("Prueba 1 - Inicio de sesión:", ev1InicioSesion);
+
+// 2. Cierre de sesión
+const ev2CierreSesion = auditMod.registrarEvento({
+  fuente: "SESION",
+  tipoEvento: AUDIT_EVENT_TYPES.LOGOUT,
+  identidad: "USR-001",
+  rol: "Administrador",
+  recursoAfectado: "SESION-001",
+  operacion: "cerrar_sesion",
+  resultado: "PERMITIDO",
+  motivo: "Sesión finalizada por solicitud del usuario",
+});
+console.log("Prueba 2 - Cierre de sesión:", ev2CierreSesion);
+
+// 3. Solicitud de acceso permitida
+const ev3AccesoPermitido = auditMod.registrarEvento({
+  fuente: "AUTORIZACION",
+  tipoEvento: AUDIT_EVENT_TYPES.ACCESS_ALLOWED,
+  identidad: "USR-002",
+  rol: "Estudiante",
+  recursoAfectado: "LAB-01",
+  operacion: "consultar_recursos",
+  resultado: "PERMITIDO",
+  motivo: "Cumple rol y pertenencia al departamento Computación",
+});
+console.log("Prueba 3 - Solicitud de acceso permitida:", ev3AccesoPermitido);
+
+// 4. Solicitud de acceso denegada
+const ev4AccesoDenegado = auditMod.registrarEvento({
+  fuente: "AUTORIZACION",
+  tipoEvento: AUDIT_EVENT_TYPES.ACCESS_DENIED,
+  identidad: "USR-002",
+  rol: "Estudiante",
+  recursoAfectado: "SRV-ADMIN-99",
+  operacion: "consultar_recursos",
+  resultado: "DENEGADO",
+  motivo: "Sin regla de acceso para el recurso restringido (denegación por defecto)",
+});
+console.log("Prueba 4 - Solicitud de acceso denegada:", ev4AccesoDenegado);
+
+// 5. Modificación de roles
+const ev5ModRoles = auditMod.ejecutarOperacionAuditada({
+  tipoEvento: AUDIT_EVENT_TYPES.ROLE_MODIFIED,
+  solicitante: { id: "USR-001", rol: "Administrador", departamento: "Sistemas", activa: true },
+  recursoId: "ROL-TECNICO",
+  operacion: "administrar_roles",
+  accessEngine: hibrido,
+  motivoExito: "Permisos del rol Técnico actualizados por Administrador",
+});
+console.log("Prueba 5 - Modificación de roles:", ev5ModRoles);
+
+// 6. Modificación de políticas
+const ev6ModPoliticas = auditMod.ejecutarOperacionAuditada({
+  tipoEvento: AUDIT_EVENT_TYPES.POLICY_MODIFIED,
+  solicitante: { id: "USR-001", rol: "Administrador", departamento: "Sistemas", activa: true },
+  recursoId: "POL-ABAC-04",
+  operacion: "administrar_politicas",
+  accessEngine: hibrido,
+  motivoExito: "Política ABAC-04 actualizada por Administrador",
+});
+console.log("Prueba 6 - Modificación de políticas:", ev6ModPoliticas);
+
+// 7. Modificación de dispositivos
+const ev7ModDispositivos = auditMod.registrarEvento({
+  fuente: "IOT",
+  tipoEvento: AUDIT_EVENT_TYPES.DEVICE_MODIFIED,
+  identidad: "USR-003",
+  rol: "Técnico",
+  recursoAfectado: "IOT-SENS-01",
+  operacion: "modificar_recursos",
+  resultado: "PERMITIDO",
+  motivo: "Intervalo de muestreo actualizado dentro del horario autorizado",
+});
+console.log("Prueba 7 - Modificación de dispositivos:", ev7ModDispositivos);
+
+// 8. Intento de operación administrativa no autorizada
+const ev8AdminNoAutorizado = auditMod.ejecutarOperacionAuditada({
+  tipoEvento: AUDIT_EVENT_TYPES.UNAUTHORIZED_ADMIN,
+  solicitante: { id: "USR-002", rol: "Estudiante", departamento: "Computación", activa: true },
+  recursoId: "POL-SEGURIDAD-GLOBAL",
+  operacion: "administrar_politicas",
+  accessEngine: hibrido,
+});
+console.log("Prueba 8 - Intento de operación administrativa no autorizada:", ev8AdminNoAutorizado);
+
+
+// Consulta final del Auditor verificando los 8 tipos de evento
+const consultaFinalAuditor = auditMod.consultarRegistros({
+  solicitante: { id: "USR-005", rol: "Auditor", departamento: "Sistemas", activa: true },
+  accessEngine: hibrido,
+});
+console.log("Total de registros auditados:", consultaFinalAuditor.total);
+console.log("Resumen por tipo de evento:", auditMod.resumen());
