@@ -5,6 +5,6 @@
   "scripts": {
     "test": "node tests/engine.test.js",
     "start": "node tests/engine.test.js",
-    "build": "node tests/engine.test.js"
+    "build": "node scripts/build.js"
   }
 }
