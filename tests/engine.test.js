@@ -146,7 +146,7 @@ console.log(
     solicitante: { id: "USR-002", rol: "Estudiante", departamento: "Computación", activa: true },
     recurso: { id: "LAB-01", departamento: "Computación", restringido: false },
     operacion: "consultar_recursos",
-    fechaHora: "2026-11-19T10:00:00.000Z",
+    fechaHora: "2026-11-19T10:00:00",
     contexto: { dispositivoConfiable: true },
   })
 );
@@ -170,7 +170,7 @@ console.log(
     solicitante: { id: "USR-002", rol: "Estudiante", departamento: "Computación", activa: true },
     recurso: { id: "SRV-SEG-01", departamento: "Computación", restringido: true },
     operacion: "consultar_recursos",
-    fechaHora: "2026-11-19T10:00:00.000Z",
+    fechaHora: "2026-11-19T10:00:00",
     contexto: { dispositivoConfiable: false },
   })
 );
@@ -296,7 +296,7 @@ console.log(
       activa: true,
     },
     accessEngine: hibrido,
-    fechaHora: "2026-11-19T10:00:00.000Z",
+    fechaHora: "2026-11-19T10:00:00",
     contexto: { dispositivoConfiable: true },
   })
 );
@@ -314,7 +314,7 @@ console.log(
       activa: true,
     },
     accessEngine: hibrido,
-    fechaHora: "2026-11-19T10:00:00.000Z",
+    fechaHora: "2026-11-19T10:00:00",
     contexto: { dispositivoConfiable: false },
   })
 );
@@ -640,7 +640,7 @@ const rP01 = motorEscenarios.evaluate({
   solicitante: estP01,
   recurso: { id: "LAB-01", departamento: "Computación", restringido: false },
   operacion: "consultar_recursos",
-  fechaHora: "2026-11-19T10:00:00.000Z",
+  fechaHora: "2026-11-19T10:00:00",
   contexto: { dispositivoConfiable: true },
 });
 
@@ -649,7 +649,7 @@ const rP02 = motorEscenarios.evaluate({
   solicitante: estP01,
   recurso: { id: "POL-GLOBAL", departamento: "Sistemas", restringido: true },
   operacion: "modificar_politicas",
-  fechaHora: "2026-11-19T10:00:00.000Z",
+  fechaHora: "2026-11-19T10:00:00",
   contexto: { dispositivoConfiable: true },
 });
 
@@ -658,7 +658,7 @@ const rP03 = motorEscenarios.evaluate({
   solicitante: tecP03,
   recurso: { id: "EQ-ASIGNADO-01", departamento: "Sistemas", restringido: false },
   operacion: "modificar_recursos",
-  fechaHora: "2026-11-19T10:00:00.000Z",
+  fechaHora: "2026-11-19T10:00:00",
   contexto: { dispositivoConfiable: true },
 });
 
@@ -667,7 +667,7 @@ const rP04 = motorEscenarios.evaluate({
   solicitante: tecP03,
   recurso: { id: "EQ-AJENO-02", departamento: "Redes", restringido: false },
   operacion: "modificar_recursos",
-  fechaHora: "2026-11-19T10:00:00.000Z",
+  fechaHora: "2026-11-19T10:00:00",
   contexto: { dispositivoConfiable: true },
 });
 
@@ -676,7 +676,7 @@ const rP05 = motorEscenarios.evaluate({
   solicitante: audP05,
   recurso: { id: "LOG-AUDITORIA", departamento: "Sistemas", restringido: true },
   operacion: "consultar_auditoria",
-  fechaHora: "2026-11-19T10:00:00.000Z",
+  fechaHora: "2026-11-19T10:00:00",
   contexto: { dispositivoConfiable: true },
 });
 
@@ -685,7 +685,7 @@ const rP06 = motorEscenarios.evaluate({
   solicitante: audP05,
   recurso: { id: "LOG-AUDITORIA", departamento: "Sistemas", restringido: true },
   operacion: "eliminar_registros",
-  fechaHora: "2026-11-19T10:00:00.000Z",
+  fechaHora: "2026-11-19T10:00:00",
   contexto: { dispositivoConfiable: true },
 });
 
@@ -694,7 +694,7 @@ const rP07 = motorEscenarios.evaluate({
   solicitante: { ...estP01, activa: false },
   recurso: { id: "LAB-01", departamento: "Computación", restringido: false },
   operacion: "consultar_recursos",
-  fechaHora: "2026-11-19T10:00:00.000Z",
+  fechaHora: "2026-11-19T10:00:00",
   contexto: { dispositivoConfiable: true },
 });
 
@@ -717,7 +717,7 @@ const rP09 = iotSim.ejecutarOperacionIoT({
   operacion: "consultar_recursos",
   solicitante: estP01,
   accessEngine: motorEscenarios,
-  fechaHora: "2026-11-19T10:00:00.000Z",
+  fechaHora: "2026-11-19T10:00:00",
   contexto: { dispositivoConfiable: true },
 });
 
@@ -727,7 +727,7 @@ const rP10 = iotSim.ejecutarOperacionIoT({
   operacion: "administrar_dispositivos",
   solicitante: estP01,
   accessEngine: motorEscenarios,
-  fechaHora: "2026-11-19T10:00:00.000Z",
+  fechaHora: "2026-11-19T10:00:00",
   contexto: { dispositivoConfiable: true },
 });
 
@@ -762,8 +762,8 @@ const rP14Escala = modulo.asignarRol(
   "Administrador"
 );
 const rP14 = {
-  resultado: rP14Escala.permitido === false ? "DENEGADO" : "PERMITIDO",
-  motivo: rP14Escala.motivo || rP14Escala.mensaje,
+  resultado: rP14Escala.ok === false ? "DENEGADO" : "PERMITIDO",
+  motivo: rP14Escala.error || rP14Escala.motivo || rP14Escala.mensaje,
 };
 
 // P15: Usuario consulta un recurso inexistente -> Denegado
@@ -772,7 +772,7 @@ const rP15 = iotSim.ejecutarOperacionIoT({
   operacion: "consultar_recursos",
   solicitante: estP01,
   accessEngine: motorEscenarios,
-  fechaHora: "2026-11-19T10:00:00.000Z",
+  fechaHora: "2026-11-19T10:00:00",
   contexto: { dispositivoConfiable: true },
 });
 
@@ -795,3 +795,12 @@ const matrizResultados = [
 ];
 
 console.table(matrizResultados);
+// Falla el proceso (y por tanto el CI) si algún resultado no coincide con lo esperado
+const fallidas = matrizResultados.filter(
+  (r) => r.Esperado.split(" ")[0].toUpperCase() !== r.Obtenido
+);
+if (fallidas.length > 0) {
+  console.error(`\n${fallidas.length} prueba(s) fallida(s): ${fallidas.map((r) => r.ID).join(", ")}`);
+  process.exit(1);
+}
+console.log("\nMatriz P01-P15: todas las pruebas coinciden con lo esperado.");
