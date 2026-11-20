@@ -5,6 +5,6 @@
   "scripts": {
     "test": "node tests/engine.test.js",
     "start": "node tests/engine.test.js",
-    "build": "node tests/engine.test.js"
+    "build": "node -e \"import('node:fs').then(async ({ mkdirSync, writeFileSync }) => { const { execFileSync } = await import('node:child_process'); mkdirSync('dist', { recursive: true }); const out = execFileSync(process.execPath, ['tests/engine.test.js'], { encoding: 'utf8' }); const escaped = out.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;'); writeFileSync('dist/index.html', '<!doctype html><html lang=\\\"es\\\"><head><meta charset=\\\"utf-8\\\"><title>Control de Acceso - Pruebas</title><style>body{font-family:monospace;background:#111;color:#eee;padding:20px}pre{white-space:pre-wrap}</style></head><body><h1>Control de Acceso Lab - Resultados</h1><pre>' + escaped + '</pre></body></html>'); console.log(out); });\""
   }
 }

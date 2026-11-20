@@ -537,7 +537,6 @@ const ev8AdminNoAutorizado = auditMod.ejecutarOperacionAuditada({
 });
 console.log("Prueba 8 - Intento de operación administrativa no autorizada:", ev8AdminNoAutorizado);
 
-
 // Consulta final del Auditor verificando los 8 tipos de evento
 const consultaFinalAuditor = auditMod.consultarRegistros({
   solicitante: { id: "USR-005", rol: "Auditor", departamento: "Sistemas", activa: true },
@@ -635,12 +634,14 @@ const profP12 = {
   gruposResponsable: ["GRP-CC-501"],
 };
 
+const fechaLocalDiezAm = new Date(2026, 10, 19, 10, 0, 0).toISOString();
+
 // P01: Estudiante consulta recurso permitido -> Permitido
 const rP01 = motorEscenarios.evaluate({
   solicitante: estP01,
   recurso: { id: "LAB-01", departamento: "Computación", restringido: false },
   operacion: "consultar_recursos",
-  fechaHora: "2026-11-19T10:00:00.000Z",
+  fechaHora: fechaLocalDiezAm,
   contexto: { dispositivoConfiable: true },
 });
 
@@ -649,7 +650,7 @@ const rP02 = motorEscenarios.evaluate({
   solicitante: estP01,
   recurso: { id: "POL-GLOBAL", departamento: "Sistemas", restringido: true },
   operacion: "modificar_politicas",
-  fechaHora: "2026-11-19T10:00:00.000Z",
+  fechaHora: fechaLocalDiezAm,
   contexto: { dispositivoConfiable: true },
 });
 
@@ -658,7 +659,7 @@ const rP03 = motorEscenarios.evaluate({
   solicitante: tecP03,
   recurso: { id: "EQ-ASIGNADO-01", departamento: "Sistemas", restringido: false },
   operacion: "modificar_recursos",
-  fechaHora: "2026-11-19T10:00:00.000Z",
+  fechaHora: fechaLocalDiezAm,
   contexto: { dispositivoConfiable: true },
 });
 
@@ -667,7 +668,7 @@ const rP04 = motorEscenarios.evaluate({
   solicitante: tecP03,
   recurso: { id: "EQ-AJENO-02", departamento: "Redes", restringido: false },
   operacion: "modificar_recursos",
-  fechaHora: "2026-11-19T10:00:00.000Z",
+  fechaHora: fechaLocalDiezAm,
   contexto: { dispositivoConfiable: true },
 });
 
@@ -676,7 +677,7 @@ const rP05 = motorEscenarios.evaluate({
   solicitante: audP05,
   recurso: { id: "LOG-AUDITORIA", departamento: "Sistemas", restringido: true },
   operacion: "consultar_auditoria",
-  fechaHora: "2026-11-19T10:00:00.000Z",
+  fechaHora: fechaLocalDiezAm,
   contexto: { dispositivoConfiable: true },
 });
 
@@ -685,7 +686,7 @@ const rP06 = motorEscenarios.evaluate({
   solicitante: audP05,
   recurso: { id: "LOG-AUDITORIA", departamento: "Sistemas", restringido: true },
   operacion: "eliminar_registros",
-  fechaHora: "2026-11-19T10:00:00.000Z",
+  fechaHora: fechaLocalDiezAm,
   contexto: { dispositivoConfiable: true },
 });
 
@@ -694,7 +695,7 @@ const rP07 = motorEscenarios.evaluate({
   solicitante: { ...estP01, activa: false },
   recurso: { id: "LAB-01", departamento: "Computación", restringido: false },
   operacion: "consultar_recursos",
-  fechaHora: "2026-11-19T10:00:00.000Z",
+  fechaHora: fechaLocalDiezAm,
   contexto: { dispositivoConfiable: true },
 });
 
@@ -717,7 +718,7 @@ const rP09 = iotSim.ejecutarOperacionIoT({
   operacion: "consultar_recursos",
   solicitante: estP01,
   accessEngine: motorEscenarios,
-  fechaHora: "2026-11-19T10:00:00.000Z",
+  fechaHora: fechaLocalDiezAm,
   contexto: { dispositivoConfiable: true },
 });
 
@@ -727,7 +728,7 @@ const rP10 = iotSim.ejecutarOperacionIoT({
   operacion: "administrar_dispositivos",
   solicitante: estP01,
   accessEngine: motorEscenarios,
-  fechaHora: "2026-11-19T10:00:00.000Z",
+  fechaHora: fechaLocalDiezAm,
   contexto: { dispositivoConfiable: true },
 });
 
@@ -742,7 +743,7 @@ const rP12 = hibrido.evaluate({
   solicitante: profP12,
   recurso: { id: "MAT-502", grupoAcademico: "GRP-CC-502", restringido: false },
   operacion: "modificar_recursos",
-  fechaHora: "2026-11-19T11:00:00.000Z",
+  fechaHora: fechaLocalDiezAm,
   contexto: { dispositivoConfiable: true },
 });
 
@@ -751,7 +752,7 @@ const rP13 = motorEscenarios.evaluate({
   solicitante: estP01,
   recurso: { id: "LAB-HORARIO-01", departamento: "Computación", restringido: false },
   operacion: "consultar_recursos",
-  fechaHora: "2026-11-19T23:00:00.000Z",
+  fechaHora: new Date(2026, 10, 19, 23, 0, 0).toISOString(),
   contexto: { horaAcceso: 23, horarioInicio: 8, horarioFin: 18, dispositivoConfiable: true },
 });
 
@@ -761,9 +762,10 @@ const rP14Escala = modulo.asignarRol(
   estudiante.id,
   "Administrador"
 );
+const escalamientoBloqueado = rP14Escala.ok === false || rP14Escala.permitido === false;
 const rP14 = {
-  resultado: rP14Escala.permitido === false ? "DENEGADO" : "PERMITIDO",
-  motivo: rP14Escala.motivo || rP14Escala.mensaje,
+  resultado: escalamientoBloqueado ? "DENEGADO" : "PERMITIDO",
+  motivo: rP14Escala.motivo || rP14Escala.mensaje || "Intento de escalamiento de privilegios bloqueado",
 };
 
 // P15: Usuario consulta un recurso inexistente -> Denegado
@@ -772,7 +774,7 @@ const rP15 = iotSim.ejecutarOperacionIoT({
   operacion: "consultar_recursos",
   solicitante: estP01,
   accessEngine: motorEscenarios,
-  fechaHora: "2026-11-19T10:00:00.000Z",
+  fechaHora: fechaLocalDiezAm,
   contexto: { dispositivoConfiable: true },
 });
 
@@ -795,3 +797,13 @@ const matrizResultados = [
 ];
 
 console.table(matrizResultados);
+
+const normalizarEsperado = (esp) => (esp.startsWith("Permitido") ? "PERMITIDO" : "DENEGADO");
+const hayFallas = matrizResultados.some(
+  (fila) => normalizarEsperado(fila.Esperado) !== String(fila.Obtenido).toUpperCase()
+);
+
+if (hayFallas) {
+  console.error("Error: uno o más escenarios de la matriz P01-P15 no coincidieron con el resultado esperado.");
+  process.exit(1);
+}
