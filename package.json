@@ -1,5 +1,10 @@
 {
   "name": "control-acceso-lab",
   "version": "1.0.0",
-  "type": "module"
+  "type": "module",
+  "scripts": {
+    "test": "node tests/engine.test.js",
+    "start": "node tests/engine.test.js",
+    "build": "node tests/engine.test.js"
+  }
 }
